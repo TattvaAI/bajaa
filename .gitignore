@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.vercel/
+.neon
+.neon/
+account.bundle.js
+config.js
+.DS_Store
+*.log

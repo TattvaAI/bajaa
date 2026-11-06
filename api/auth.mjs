@@ -1,0 +1,59 @@
+import { handleAuthProxyRequest } from '@neon/auth/server';
+
+// Keep Neon sessions on BAJAA's own origin, including Safari's cookie jar.
+const routes = new Map([
+  ['get-session', ['GET']],
+  ['token', ['GET']],
+  ['sign-in/social', ['POST']],
+  ['sign-out', ['POST']],
+]);
+
+export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'private, no-store');
+  const proto = req.headers['x-forwarded-proto'] || 'http';
+  const url = new URL(req.url, `${proto}://${req.headers.host}`);
+  const path = url.searchParams.get('path') || url.pathname.replace(/^\/api\/auth\//, '');
+  url.searchParams.delete('path');
+  if (!routes.has(path)) {
+    res.statusCode = 404;
+    return res.end('{}');
+  }
+  if (!routes.get(path).includes(req.method)) {
+    res.statusCode = 405;
+    res.setHeader('Allow', routes.get(path).join(', '));
+    return res.end('{}');
+  }
+  if (req.method === 'POST' && req.headers.origin !== url.origin) {
+    res.statusCode = 403;
+    return res.end('{}');
+  }
+  if (!process.env.NEON_AUTH_BASE_URL || !process.env.NEON_AUTH_COOKIE_SECRET) {
+    res.statusCode = 503;
+    return res.end(JSON.stringify({message:'Sign-in is temporarily unavailable.'}));
+  }
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (value !== undefined) headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+  }
+  const body = req.body === undefined ? undefined : typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+  const request = new Request(url, {method:req.method, headers, ...(body ? {body, duplex:'half'} : {})});
+  try {
+    const response = await handleAuthProxyRequest({
+      request, path,
+      baseUrl:process.env.NEON_AUTH_BASE_URL,
+      cookieSecret:process.env.NEON_AUTH_COOKIE_SECRET,
+      sessionDataTtl:60,
+      sameSite:'lax',
+    });
+    res.statusCode = response.status;
+    for (const [key, value] of response.headers) {
+      if (key !== 'set-cookie' && key !== 'content-encoding') res.setHeader(key, value);
+    }
+    const cookies = response.headers.getSetCookie();
+    if (cookies.length) res.setHeader('Set-Cookie', cookies);
+    res.end(Buffer.from(await response.arrayBuffer()));
+  } catch {
+    res.statusCode = 502;
+    res.end(JSON.stringify({message:'The sign-in service could not be reached. Please try again.'}));
+  }
+}

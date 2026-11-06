@@ -1,0 +1,2 @@
+require('./env.cjs');const fs=require('node:fs');const pg=require('pg');
+(async()=>{const db=new pg.Client({connectionString:(process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL).replace(/sslmode=require/,'sslmode=verify-full')});try{await db.connect();await db.query(fs.readFileSync(__dirname+'/../server/schema.sql','utf8'));console.log('PASS Neon migration: bajaa_history table and owner index ready.');}finally{await db.end();}})().catch(e=>{console.error('Migration failed:',e.code || e.name);process.exitCode=1;});
