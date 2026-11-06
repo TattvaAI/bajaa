@@ -114,3 +114,5 @@ Deployment dpl_6xiMLSGAAjSARSkR8yfWdP4TDv38 Ready. Build, syntax, mock playback 
 Staged secret-pattern scan passed; .env.local, .neon, .vercel, account.bundle.js and dist are ignored. New CI checks build, syntax, runtime dependency audit, smoke, real SDK regression and axe on Ubuntu/Node22 with no production credentials.
 
 History request quota migration applied additively. Account bulk deletion uses verified ownership; full managed-identity deletion handled through support. New history queue retries quietly; no claim that the user's exact earlier failure was traced from logs.
+
+Final live playback/storage check: room opened in 1,932ms in one measured run (not a guarantee); 100-character-normalised room name saved; owner bulk deletion returned empty history; live Yaad Piya Ki Aane Lagi played at state1 and advanced 18.027s →20.910s over 3 seconds. Google consent completion is confirmed by the user. Production baseline is now Vercel dpl_6xiMLSGAAjSARSkR8yfWdP4TDv38.
