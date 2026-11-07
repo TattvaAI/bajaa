@@ -9,7 +9,9 @@
     "check": "node --check app.js && node --check design.js && node --check sets.js && node --check tune.js && node --check account.js && node --check api/auth.mjs && node --check api/account.mjs && node --check server/history.mjs",
     "test": "node tests/smoke.cjs",
     "test:a11y": "node tests/accessibility.cjs",
-    "test:account": "node tests/account-token.cjs"
+    "test:account": "node tests/account-token.cjs",
+    "test:queue": "node tests/account-queue.cjs",
+    "test:proxy": "node tests/auth-proxy.cjs"
   },
   "engines": {
     "node": ">=22.12"

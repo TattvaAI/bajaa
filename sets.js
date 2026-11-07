@@ -1,14 +1,15 @@
 (() => {
-  'use strict';const {el,nav,footer,notice}=window.BAJAADesign;const app=document.getElementById('app');let version=0;
+  'use strict';const {el,nav,footer,notice}=window.BAJAADesign;const app=document.getElementById('app');let version=0;let removeSyncListener=()=>{};
   const read=()=>{try{const a=JSON.parse(localStorage.getItem('naux.sets') || '[]');return Array.isArray(a)?a.filter(s=>s && typeof s.id==='string' && Array.isArray(s.songs)):[];}catch{return[];}};
   async function render() {
     if(!window.BAJAAAccount?.verified)return;
-    const v=++version;const account=window.BAJAAAccount;const sets=await(account?.list() || Promise.resolve(read()));if(v!==version)return;
+    removeSyncListener();const v=++version;const account=window.BAJAAAccount;const sets=await(account?.list() || Promise.resolve(read()));if(v!==version || !account.verified)return;
     const main=el('main',{class:'sets-page'},nav('sets'),el('h1',{},'Good nights, remembered.'),el('p',{class:'sets-intro'},'Your sessions save themselves. Come back when you feel like an encore.'));
     const panel=el('section',{class:'account-panel','aria-label':'Your account'},el('p',{},account?.user?'Signed in. Your listening history syncs across devices.':account?.configured?'Sign in with Google to keep your listening history with you. Sign-in is required to listen.':'Account connection is unavailable. Please try again.'),
       el('button',{class:account?.user?'text-button':'bajaa-button primary',disabled:!account?.configured,onclick:async()=>{if(account.user)await account.signOut();else await account.signIn();}},account?.user?'Sign out':'Continue with Google'));
     const sync=el('p',{class:'history-sync-status',role:'status'},account.syncStatus==='pending'?'Saved on this device · retrying cloud sync':'History sync connected');
-    window.addEventListener('bajaa:sync',()=>{if(sync.isConnected)sync.textContent=account.syncStatus==='pending'?'Saved on this device · retrying cloud sync':account.syncStatus==='saving'?'Saving history…':'History sync connected';},{once:true});
+    const updateSync=()=>{if(sync.isConnected)sync.textContent=account.syncStatus==='pending'?'Saved on this device · retrying cloud sync':account.syncStatus==='saving'?'Saving history…':'History sync connected';};
+    window.addEventListener('bajaa:sync',updateSync);removeSyncListener=()=>window.removeEventListener('bajaa:sync',updateSync);
     panel.append(sync);main.append(panel);
     const exportButton=el('button',{class:'text-button',onclick:async()=>{exportButton.disabled=true;try{const rows=await account.exportHistory();const url=URL.createObjectURL(new Blob([JSON.stringify(rows,null,2)],{type:'application/json'}));const a=el('a',{href:url,download:'bajaa-listening-history.json'});a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}finally{exportButton.disabled=false;}}},'Export history ↓');
     const clear=el('button',{class:'text-button',onclick:async()=>{if(clear.dataset.confirm){clear.disabled=true;try{await account.deleteHistory();render();}catch(e){notice(e.message);clear.disabled=false;}return;}clear.dataset.confirm='yes';clear.textContent='Confirm: delete all history';}},'Delete all history');
@@ -26,5 +27,5 @@
     })));
     main.append(footer());app.replaceChildren(main);
   }
-  window.BAJAADesign.requireSignIn().then(ok=>{if(ok)render();});window.addEventListener('bajaa:account',render);
+  window.BAJAADesign.requireSignIn().then(ok=>{if(ok)render();});window.addEventListener('bajaa:account',()=>{if(!window.BAJAAAccount?.user){version++;removeSyncListener();window.BAJAADesign.requireSignIn();}else render();});
 })();

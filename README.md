@@ -22,12 +22,14 @@ Open http://localhost:8000. If it is busy, use `PORT=8001 npm run dev`. Build se
 npm run check
 npm test
 npm run test:a11y
+npm run test:queue
+npm run test:proxy
 node tests/neon-e2e.cjs
 node tests/auth-gate.cjs
 node tests/account-token.cjs
 ```
 
-`BAJAA_TEST_URL` selects a running server. Browser tests use a deterministic YouTube stub, so they prove controls and recovery, not music availability. neon-e2e uses synthetic identities in an isolated local test handler against the real database; it proves CRUD and ownership, and separately checks real JWT rejection. Google consent and cross-device sessions need a real account.
+`BAJAA_TEST_URL` selects a running server. Browser tests use a deterministic YouTube stub, so they prove controls and recovery, not music availability. neon-e2e uses synthetic identities in an isolated local test handler against the real database; it proves CRUD and ownership, and separately checks real JWT rejection. User confirmed Google login; real Neon-issued disposable sessions also verified production reload and cloud sync. Physical-device checks remain.
 
 ## Deploy
 
@@ -45,4 +47,4 @@ YouTube remains the current provider. The user requested hidden dual-deck playba
 
 Latest checkpoint: all stock photographs were removed. The public catalogue uses text rows. Verified build, browser, accessibility, live auth denial and Neon storage results are in [docs/VALIDATION.md](docs/VALIDATION.md); the full remaining-work list is in [docs/PROJECT_REVIEW.md](docs/PROJECT_REVIEW.md).
 
-Production health: /api/health. Functions deploy in Singapore (sin1). History saves retry automatically and report sync status on History. GitHub Actions runs the frontend/account/accessibility checks without real credentials. Apply additive database migrations before deploying schema changes.
+Production health: /api/health. Functions deploy in Singapore (sin1). History saves retry quietly, serialize with deletion and stop on sign-out; signed-out auth checks avoid upstream queries. History saves retry automatically and report sync status on History. GitHub Actions runs the frontend/account/accessibility checks without real credentials. Apply additive database migrations before deploying schema changes.

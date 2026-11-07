@@ -31,6 +31,13 @@ export default async function handler(req, res) {
     res.statusCode = 503;
     return res.end(JSON.stringify({message:'Sign-in is temporarily unavailable.'}));
   }
+  // A new visitor cannot have a session without an auth cookie or OAuth verifier.
+  // Avoid an upstream database round trip merely to rediscover that fact.
+  if (path === 'get-session' && !url.search && !(req.headers.cookie || '').includes('__Secure-neon-auth.')) {
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({session:null,user:null}));
+  }
+  const started = performance.now();
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
     if (value !== undefined) headers.set(key, Array.isArray(value) ? value.join(', ') : value);
@@ -42,9 +49,10 @@ export default async function handler(req, res) {
       request, path,
       baseUrl:process.env.NEON_AUTH_BASE_URL,
       cookieSecret:process.env.NEON_AUTH_COOKIE_SECRET,
-      sessionDataTtl:60,
+      sessionDataTtl:300,
       sameSite:'lax',
     });
+    res.setHeader('Server-Timing', `auth;dur=${Math.round(performance.now()-started)}`);
     res.statusCode = response.status;
     for (const [key, value] of response.headers) {
       if (key !== 'set-cookie' && key !== 'content-encoding') res.setHeader(key, value);

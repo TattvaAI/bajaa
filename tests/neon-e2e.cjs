@@ -14,5 +14,5 @@ assert.equal((await call('DELETE',b,{id})).status,200);assert.equal((await call(
 assert.equal((await call('POST',a,{id:'invalid'})).status,400);console.log('PASS malformed history rejected');
 const r=await fetch(process.env.NEON_AUTH_JWKS_URL);assert(r.ok);const keys=await r.json();assert(keys.keys?.length);console.log('PASS live Neon Auth JWKS reachable');
 const actual=await fetch((process.env.BAJAA_TEST_URL || 'http://localhost:8000')+'/api/history',{headers:{Authorization:'Bearer forged-token'}});assert.equal(actual.status,401);console.log('PASS running app rejects forged Neon access token');
-}finally{await db.query('DELETE FROM bajaa_history WHERE user_id=ANY($1)',[[a,b]]);await new Promise(r=>server.close(r));await db.end();}
+}finally{await db.query('DELETE FROM bajaa_history WHERE user_id=ANY($1)',[[a,b]]);await db.query('DELETE FROM bajaa_request_limits WHERE user_id=ANY($1)',[[a,b]]);await new Promise(r=>server.close(r));await db.end();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

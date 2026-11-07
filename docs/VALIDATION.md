@@ -1,118 +1,48 @@
-# BAJAA final checkpoint · 7 November 2026
+# BAJAA release validation · 7 November 2026
 
-Production: https://bajaa.vercel.app
-Deployment: dpl_GeHELBTNrAL7eQ5NhkZz5ijtD61k; Vercel status Ready.
+Production: https://bajaa.vercel.app · GitHub: https://github.com/TattvaAI/bajaa
+Final GitHub/Vercel status is recorded after release below.
 
-## Build and local running app
+## Latest local checks
 
-`npm run check && npm run build` exited 0:
+Node 26.4 locally; GitHub CI uses Node 22. App started with PORT=8005 npm run dev.
 
 ```text
-Built 19 song lists from 933 valid tracks.
+npm run check: exit 0
+npm run build: exit 0
+Built 19 song lists from 1118 valid tracks.
 BAJAA production build complete. Public files in dist/.
+npm audit --omit=dev: found 0 vulnerabilities
 ```
 
-`PORT=8002 npm run dev`:
+Browser smoke passed four questions → automatic playback, two preloaded decks, equal-power volume ramp, skip/pause/resume/full song, mood shift, session end/history/replay, unavailable-video and blocked-playback recovery, sign-out gate, no browser exceptions and 360/390/768/1024/1440px routes.
+
+24 axe WCAG A/AA scans passed routes, setup, preparation, player, mood dialog and summary at 390/1440px. Tests explicitly use no-preference motion, covering the Linux CI contrast failure. A real intermediate color failure was reproduced: white text over the fading disabled background. Semantic colors now switch together; motion feedback remains on transform/shadow.
 
 ```text
-BAJAA running at http://localhost:8002
+PASS real Neon SDK cached session supplies JWT to repeated authorization, library and history requests
+PASS real SDK sign-out locks History and shows sign-in before delayed upstream response
+PASS deferred retry preserves and eventually syncs the newest offline save
+PASS single session deletion cannot be undone by an in-flight save or retry
+PASS bulk history deletion cannot be undone by an in-flight save or retry
+PASS sign-out immediately locks the room and invalidates late writes and timers
+PASS cross-tab sign-out cancels writes still waiting for a token
+PASS signed-out session check performs zero upstream auth requests
+PASS OAuth verifier and challenge are forwarded rather than mistaken for signed-out visitors
 ```
 
-`BAJAA_TEST_URL=http://localhost:8002 npm test` exited 0:
+Fixtures only stub network/auth/media in tests, excluded from production. Queue tests execute the actual adapter with deferred requests. Proxy tests execute the actual handler and ensure OAuth query/challenge paths remain intact.
 
-```text
-PASS both deck volumes ramp during crossfade
-PASS four questions → automatic playback; two preloaded decks and music-only UI; skip, pause, resume, full song; no queue editor
-PASS mood shift, end session stops playback, automatic history
-PASS preserved legacy storage and automatic session replay
-PASS unavailable-video recovery
-PASS blocked playback tap recovery
-PASS responsive routes and playback at 360, 390, 768, 1024, 1440px
-PASS no browser exceptions
-PASS sign-out destroys player and locks listening
-```
+Live Neon end-to-end storage passed API → database persistence, update without duplicates, owner isolation/deletion, malformed input rejection, JWKS availability and real running-app forged-JWT denial. Synthetic test records are removed after each run. Earlier real Neon-issued disposable sessions passed production reload, two independent contexts/cloud sync, bulk deletion and sign-out. User confirmed Google consent/login. A production stream advanced 18.027 →20.910 seconds in 3 seconds at YouTube state 1; this is one playback sample.
 
-Browser smoke uses deterministic auth/YouTube fixtures, excluded from production. It proves app behavior; it does not prove live music reliability.
+## Failure history and fixes
 
-## Neon end-to-end storage
+GitHub run 42293322471 failed legal link affordance; underlines corrected. Run 42293856706 failed preparation-button contrast at 1440; the transient color problem was reproduced with motion enabled and corrected in CSS. Neither failed run was treated as green. Tests now preserve normal motion preferences across platforms.
 
-`BAJAA_TEST_URL=http://localhost:8002 node tests/neon-e2e.cjs` exited 0:
+Pre-fix production timings: unsigned session check 245ms and 4,718ms, sign-out 269ms in single samples; cold health request 1,037ms. The signed-out shortcut avoids upstream auth entirely; a signed cookie cache lasts 300 seconds and is still verified by the SDK/server secret. Protected APIs still verify signed JWT and active owner. These are measurements, not latency guarantees.
 
-```text
-PASS history API rejects unauthenticated requests
-PASS API → live Neon Postgres → persisted history; second identity cannot read it
-PASS session updates do not duplicate history
-PASS owner-only deletion and read-back from Neon
-PASS malformed history rejected
-PASS live Neon Auth JWKS reachable
-PASS running app rejects forged Neon access token
-```
+Google redirect verified accounts.google.com with the supplied custom client ID and exact Neon callback domain. No provider secret is stored in this document, repository or build. Google's chooser domain is independent of frontend styling.
 
-Uses an isolated test HTTP handler with synthetic identities against the real database. Test records are deleted afterward. The live user/JWT acceptance path is not covered by those synthetic identities.
+## Practical boundaries
 
-## Production gate and assets
-
-`BAJAA_TEST_URL=https://bajaa.vercel.app node tests/auth-gate.cjs` exited 0:
-
-```text
-PASS compulsory sign-in and zero YouTube frames at 390px
-PASS compulsory sign-in and zero YouTube frames at 1440px
-PASS /api/library denies missing/forged token
-PASS /api/session denies missing/forged token
-PASS /api/history denies missing/forged token
-PASS music source not public
-PASS all repeated photos removed
-```
-
-Separate HTTP checks: / and /songs/ 200; /favicon.svg 200; /seed.js and /assets/ 404; all three unauthenticated APIs 401. CSP present, history Cache-Control private/no-store. Public dist raster image count: 0.
-
-A real production Google-button click reached https://accounts.google.com. Completion of consent, session restoration, authenticated playback and history sync between two real browsers still require a human account test.
-
-## Accessibility and dependencies
-
-`BAJAA_TEST_URL=http://localhost:8002 npm run test:a11y` exited 0: 24 axe WCAG A/AA scans across public routes, questions, preparation, player, mood dialog and summary at 390/1440. Production signed-out gate scans passed too. Production CSP blocked initial axe injection; only the test harness now bypasses CSP for tool injection. Deployment policy remains enabled and was checked separately.
-
-`npm audit --omit=dev`: found 0 vulnerabilities. Prior low development-tool advisory remains documented in PROJECT_REVIEW.md.
-
-Current sign-in, catalogue, setup and player screenshots are in screenshots/. Sign-in/catalogue captures use production; setup/player use deterministic fixtures. They were visually inspected; obsolete screenshots removed. Physical-device performance and all 933 music sources have not been verified.
-
-## Failures and corrections
-
-- Lost process handles after interruption: inspected Vercel and reran final checks instead of treating unknown sessions as successful.
-- Vercel CLI absent from shell PATH: used npx vercel; inspection succeeded.
-- Worker launch initially required AGENTS.md: supplied isolated contract file, then ran both permitted models. Both timed out without handoffs; no worker edits accepted.
-- Production accessibility harness initially failed with axe undefined because CSP blocked injection. Test-only bypass corrected; rerun passed.
-- Neon test hardcoded an obsolete local port: changed it to honor BAJAA_TEST_URL; real DB test passed on current running app.
-- Earlier init invalid_grant and deployment dependency race were resolved by login and retry; final provision/migration passed.
-
-No claim is made that Google consent completion, real cross-device sync, all devices, or commercial music compliance is finished.
-
-## Follow-up sign-in regression · 7 November
-
-Deployment dpl_7cobjhTU1TMfQW9eg3wYCZaLC3XF Ready, aliased to https://bajaa.vercel.app.
-
-Build: 19 song lists from 1,118 valid tracks; exited 0. Browser smoke and 24 axe scans rerun successfully. Real installed SDK regression (tests/account-token.cjs) passed repeated authorization, library and history with the cached-session JWT. No production auth fixture is deployed.
-
-Real Neon-issued test session checks on production:
-
-```text
-PASS production real Neon session opens room in two independent contexts
-PASS production session restoration
-PASS production cloud history sync
-PASS production sign-out
-PASS production sign-in button reaches Google; secure first-party challenge true
-```
-
-Test accounts are synthetic disposable identities, with valid upstream-issued sessions and real production APIs/DB. The browser cookie was seeded for acceptance; human Google consent has not been completed by the coordinator. Earlier failure to verify sign-in was an actual app/SDK integration bug, not a proven user connection failure. Nested-route 404 was also reproduced and fixed via Vercel rewrite. Regression tests now check sign-in/social returns Google URL and challenge cookies.
-
-Catalogue mix checks across available languages and all four moods produced non-empty queues with zero duplicate song IDs. Library records are from the NAUX reference; 10 structurally invalid cues remain excluded. Full-source availability and physical-device testing remain incomplete.
-
-## Production candidate validation
-
-Deployment dpl_6xiMLSGAAjSARSkR8yfWdP4TDv38 Ready. Build, syntax, mock playback smoke, installed-SDK regression, 24 WCAG scans, live Neon CRUD/ownership and production auth-gate checks passed. Production dependency audit: zero vulnerabilities. Nested Google route/challenge and cross-origin denial are now permanent regression checks. User confirmed Google sign-in works.
-
-Staged secret-pattern scan passed; .env.local, .neon, .vercel, account.bundle.js and dist are ignored. New CI checks build, syntax, runtime dependency audit, smoke, real SDK regression and axe on Ubuntu/Node22 with no production credentials.
-
-History request quota migration applied additively. Account bulk deletion uses verified ownership; full managed-identity deletion handled through support. New history queue retries quietly; no claim that the user's exact earlier failure was traced from logs.
-
-Final live playback/storage check: room opened in 1,932ms in one measured run (not a guarantee); 100-character-normalised room name saved; owner bulk deletion returned empty history; live Yaad Piya Ki Aane Lagi played at state1 and advanced 18.027s →20.910s over 3 seconds. Google consent completion is confirmed by the user. Production baseline is now Vercel dpl_6xiMLSGAAjSARSkR8yfWdP4TDv38.
+See PROJECT_REVIEW.md for music rights/provider policies, device/catalogue coverage, consent/secret rotation, manual managed-account deletion and cross-device active-save limits. No claim is made of full commercial music clearance or exhaustive device/source availability.

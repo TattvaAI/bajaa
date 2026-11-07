@@ -48,3 +48,6 @@ button:disabled{opacity:1;background:#e2ded3!important;color:#68645d!important;b
 
 .account-data-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0 32px}.history-sync-status{font-size:12px;color:var(--muted)}@media(max-width:767px){.account-data-actions{flex-direction:column;align-items:stretch}}
 .legal-page p a,.legal-page li a{color:var(--ink);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}.legal-page p a:hover{color:var(--red)}
+
+/* Switch semantic control colors together; tweening both crosses unreadable midtones. */
+button,a,.bajaa-button,.choice-card,.catalog-index li>a{transition-property:transform,box-shadow}
