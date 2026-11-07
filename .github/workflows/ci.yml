@@ -25,6 +25,7 @@ jobs:
           npm run dev > /tmp/bajaa-dev.log 2>&1 &
           for attempt in $(seq 1 30); do curl -fsS http://localhost:8000 >/dev/null && break; sleep 1; done
           npm test
+          node tests/auth-config.cjs
           npm run test:proxy
           npm run test:queue
           npm run test:account

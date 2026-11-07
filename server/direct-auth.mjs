@@ -1,10 +1,11 @@
 import { betterAuth } from 'better-auth';
 import { database } from './history.mjs';
+import { validGoogleSecret } from './auth-config.mjs';
 
 let instance;
 export function directAuth(){
  if(!instance){
-  if(!process.env.BETTER_AUTH_SECRET || !process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET)throw Error('BAJAA auth configuration missing');
+  if(!process.env.BETTER_AUTH_SECRET || !process.env.GOOGLE_CLIENT_ID || !validGoogleSecret(process.env.GOOGLE_CLIENT_SECRET))throw Error('BAJAA auth configuration missing or invalid');
   instance=betterAuth({
    appName:'BAJAA',
    baseURL:process.env.BETTER_AUTH_URL || 'https://bajaa.vercel.app',
