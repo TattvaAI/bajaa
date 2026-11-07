@@ -52,3 +52,18 @@ See PROJECT_REVIEW.md for music rights/provider policies, device/catalogue cover
 Application commit d09b9cf passed GitHub CI run 42362228382 on Ubuntu/Node22 and deployed automatically through the connected Vercel Git repository (dpl_BWTAichUPYtyhoms5b1aqQnAar5d, Ready). Production auth-gate checks all passed. Signed-out get-session warm samples measured 156/188/131ms (first request 1,071ms). A real Neon-issued production room opened in 1,671ms; cloud save/second-browser read passed.
 
 The first live bulk-delete check caught stale cache merging in a second browser. Successful cloud reads now replace the cache and merge only pending unsynced writes; account caches are no longer reimported as fresh guest history. A deferred-fetch regression covers remote deletion. The failed run cleaned its disposable user/data. This check was not treated as a successful release acceptance; follow-up results are recorded below.
+
+## Accepted application release
+
+Commit 6487e7569acd1d73245a3e2db3236663c6136c42 is pushed to main and passed https://github.com/TattvaAI/bajaa/actions/runs/42362431095. Vercel automatic production deployment dpl_5uWFw3RiXdatiADii5NsmSPLadzd is Ready and aliased to https://bajaa.vercel.app.
+
+```text
+PASS live Neon-issued session opens production room in 3362ms
+PASS live production history save and second-browser read
+PASS live production owner bulk delete and second-browser cloud read
+PASS live production immediate sign-out screen and signed-out reload
+```
+
+The temporary acceptance runner's cleanup initially failed with a database connection timeout after all functional checks passed. Cleanup retry succeeded: one remaining disposable release account and its data removed; remaining disposable auth users: 0. No production secrets were printed. Room entry varied 1,671–3,362ms across these samples. Signed-out warm session checks were 131–188ms; cold starts and upstream variability remain. Tests use upstream-issued disposable sessions, while the user independently completed Google consent.
+
+Public assets, health, authentication denial, nested Google route/challenge and origin/admin restrictions passed production checks. The original repetitive photos remain removed. Current setup/player screenshots were refreshed with deterministic fixtures and visually reviewed. Final documentation commits may create newer equivalent deployments; this ID identifies the verified application revision.
