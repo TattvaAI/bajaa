@@ -61,6 +61,13 @@ async function fixture() {
     assert.equal(f.cloud.get(item().id).songs[0].title,'Track 2');
     console.log('PASS deferred retry preserves and eventually syncs the newest offline save');
   }
+  {
+    const f=await fixture();f.storage.set('bajaa.history.owner-a',JSON.stringify([item()]));
+    const listing=f.account.list();await tick();f.requests[0].finish();const rows=await listing;
+    assert.equal(rows.length,0,'successful cloud read removes a remotely deleted local cache entry');
+    assert.equal(JSON.parse(f.storage.get('bajaa.history.owner-a')).length,0);
+    console.log('PASS cloud deletion removes stale history from another browser cache');
+  }
   for(const bulk of [false,true]){
     const f=await fixture();const saving=f.account.save(item());await tick();
     const removing=bulk?f.account.deleteHistory():f.account.remove(item().id);await tick();

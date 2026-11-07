@@ -47,7 +47,7 @@ async function list(){
  return enqueue(async()=>{
   if(!current(c))return [];
   const local=read();
-  try{const cloud=await api('GET',undefined,c);const merged=[...new Map([...local,...cloud,...pending()].filter(x=>!retired.has(x.id)).map(x=>[x.id,x])).values()].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,100);write(merged);return merged;}
+  try{const cloud=await api('GET',undefined,c);const merged=[...new Map([...cloud,...pending()].filter(x=>!retired.has(x.id)).map(x=>[x.id,x])).values()].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,100);write(merged);return merged;}
   catch{if(!current(c))return [];setSync('pending');return local;}
  });
 }
@@ -69,8 +69,9 @@ async function importLocal(){
  const c=context();if(!current(c) || deletingAll)return;
  await enqueue(async()=>{
   if(!current(c) || deletingAll)return;
-  try{const cloud=await api('GET',undefined,c);const known=new Set(cloud.map(x=>x.id));let guest=[];try{guest=JSON.parse(localStorage.getItem('naux.sets') || '[]');}catch{}
-   for(const item of [...read(),...(Array.isArray(guest)?guest:[])])if(!known.has(item.id) && !retired.has(item.id) && !deletingAll){setPending([normalize(item),...pending().filter(x=>x.id!==item.id)]);known.add(item.id);}
+  try{const cloud=await api('GET',undefined,c);const known=new Set(cloud.map(x=>x.id));let guest=[];const importedKey='bajaa.imported.'+c.owner;try{if(!localStorage.getItem(importedKey))guest=JSON.parse(localStorage.getItem('naux.sets') || '[]');}catch{}
+   for(const item of (Array.isArray(guest)?guest:[]))if(!known.has(item.id) && !retired.has(item.id) && !deletingAll){setPending([normalize(item),...pending().filter(x=>x.id!==item.id)]);known.add(item.id);}
+   try{localStorage.setItem(importedKey,'1');}catch{}
   }catch{if(current(c))setSync('pending');}
  });
  return flushPending();

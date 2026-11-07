@@ -46,3 +46,9 @@ Google redirect verified accounts.google.com with the supplied custom client ID 
 ## Practical boundaries
 
 See PROJECT_REVIEW.md for music rights/provider policies, device/catalogue coverage, consent/secret rotation, manual managed-account deletion and cross-device active-save limits. No claim is made of full commercial music clearance or exhaustive device/source availability.
+
+## Release verification follow-up
+
+Application commit d09b9cf passed GitHub CI run 42362228382 on Ubuntu/Node22 and deployed automatically through the connected Vercel Git repository (dpl_BWTAichUPYtyhoms5b1aqQnAar5d, Ready). Production auth-gate checks all passed. Signed-out get-session warm samples measured 156/188/131ms (first request 1,071ms). A real Neon-issued production room opened in 1,671ms; cloud save/second-browser read passed.
+
+The first live bulk-delete check caught stale cache merging in a second browser. Successful cloud reads now replace the cache and merge only pending unsynced writes; account caches are no longer reimported as fresh guest history. A deferred-fetch regression covers remote deletion. The failed run cleaned its disposable user/data. This check was not treated as a successful release acceptance; follow-up results are recorded below.
