@@ -26,7 +26,7 @@ Creator SHIVANSH · support contact@interncell.com
 
 The supplied stack document is a proposal, not a requirement. Its useful principles are simplicity, minimal client JavaScript and measured bottlenecks. Adding React/Next.js, Redis, jobs and AI infrastructure would not remove managed OAuth round trips. Keep the current static frontend, Vercel Node functions and Neon Postgres/Auth while measuring auth latency. Server-Timing now exposes auth processing duration without identity or token data.
 
-The Google account chooser uses the Neon callback domain and currently displays neon.tech. The flow was checked to use the user's own Google client ID. Google controls chooser branding; Google Auth Platform branding/publication and possibly a verified custom callback domain or a separately planned auth migration are required for further branding control. Do not promise a CSS/appName change fixes that screen. A working IdP should not be casually replaced.
+After comparing Interncell's self-managed Better Auth architecture, BAJAA moved its Google callback to https://bajaa.vercel.app/api/auth/callback/google using patched Better Auth 1.7.18. Neon remains the database. User IDs and Google subject bindings are preserved in separate auth tables; managed tables remain intact for rollback. Users sign in once again. Secure HttpOnly cookies authenticate protected API calls; server sessions are checked against the database. Google controls the chooser wording, but the callback now belongs to BAJAA.
 
 ## Remaining launch limitations
 
@@ -34,7 +34,7 @@ The Google account chooser uses the Neon callback domain and currently displays 
 2. All 1,118 sources, long listening sessions, ads, Bluetooth/background playback and real iPhone/Android behavior need broader testing.
 3. Rotate the Google secret supplied in chat, update Neon, and finish Google consent-screen branding/publication. Review the account-wide MCP credential created by Neon CLI init; the app does not use it.
 4. Managed identity deletion remains a manual support process. History export and individual/bulk history deletion are implemented. Operator retention/deletion handling must be maintained.
-5. Upstream auth latency varies; sign-in still requires Google/Neon. Signed JWTs can remain valid briefly after sign-out; sign-out locks the app and clears its server session, but immediate JWT revocation is not claimed.
+5. Upstream auth latency varies; sign-in still requires Google/Neon. Direct-mode sign-out deletes the database session and locks the UI immediately. Legacy JWT behavior applies only to managed rollback mode.
 6. Cross-device deletes during simultaneous active listening can still be followed by a new session update from that other device. Local deletion barriers cover this browser's queued/in-flight work; global cancellation requires server-side deletion versions.
 
 These limits prevent an unconditional commercial production-ready claim.
@@ -44,3 +44,9 @@ These limits prevent an unconditional commercial production-ready claim.
 Earlier completed fallback audits: yeta/deepseek-v4.1-flash-uncensored, auth 38.738s (24,142 input / 1,617 output reported) and controls 20.623s (19,532 input / 1,216 output). Findings independently reviewed; no worker code integrated.
 
 Release race audit: yeta/deepseek-v4.1-flash timed out at 90.154s (12,939 input / 3,552 output / 2,390 reasoning reported). A partial file described the same races independently found by Codex, but no completed handoff or edits accepted. Permitted fallback yeta/deepseek-v4.1-flash-uncensored timed out at 45.139s (11,702 input / 146 output / 67 reasoning). Codex implemented/reviewed and ran regression checks directly. Logs remain in isolated /tmp worker folders, outside the repository. Billing and coordinator token savings are not verified; review overhead was not separately timed.
+
+## Same-domain auth migration
+
+User explicitly requested bajaa.vercel.app on Google's account chooser after comparison with Interncell. Neon Postgres does not require managed Neon Auth. BAJAA now runs Better Auth on Vercel with a same-domain callback, dedicated table names, secure cookie prefix, database-backed rate limit and CSRF origin checks. Existing identities/Google account bindings copied without old tokens/passwords/sessions. History/cache IDs unchanged. SQL tested twice on isolated Neon branch before additive production application. No changes made to Interncell.
+
+The allowed DeepSeek worker yeta/deepseek-v4.1-flash completed its audit in 22.764s: 15,931 input / 1,009 output / 1,433 reasoning reported. Coordinator accepted callback guidance, rejected unsupported session-continuity/shared-managed-table recommendations, and independently implemented/tested the migration. No worker code integrated; billing/savings/review overhead not measured.

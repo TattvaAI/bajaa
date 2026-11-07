@@ -33,6 +33,7 @@
     app.replaceChildren(el('main',{class:'signin-page'},el('header',{class:'site-header'},el('a',{class:'brand',href:'/'},'BAJAA')),el('section',{},el('p',{class:'eyebrow'},'The room starts here'),el('h1',{},'Sign in.',el('br'),'Then switch off.'),el('p',{},'One account. Your music and your history.'),button,el('p',{class:'signin-terms'},'By continuing, you agree to the ',el('a',{href:'/terms/'},'Terms'),' and ',el('a',{href:'/privacy/'},'Privacy policy'),'.'),el('div',{class:'maker-note'},el('span',{class:'maker-mark','aria-hidden':'true'},'बस बजने दो'),el('p',{},'Built for the friend who always gets handed the aux.'))),footer()));
     return false;
   }
+  if(new URLSearchParams(location.search).has('auth_error'))notice('Google sign-in could not finish. Please try again.');
   window.BAJAADesign={el,nav,footer,notice,requireSignIn};
   window.addEventListener('bajaa:account-error',e=>notice(e.detail?.message || e.detail || 'Account connection failed.'));
   document.body.prepend(el('a',{class:'skip-link',href:'#main-content'},'Skip to content'));

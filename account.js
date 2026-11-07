@@ -1,7 +1,9 @@
-/* Account adapter uses managed Neon Auth. The database is never called by the browser. */
+/* Account adapter supports same-domain Better Auth and managed Neon rollback. The database is never called by the browser. */
 import { createAuthClient } from '@neon/auth';
+import { createAuthClient as createDirectAuthClient } from 'better-auth/client';
+const direct=window.BAJAA_CONFIG?.authMode==='direct';
 const authUrl=window.BAJAA_CONFIG?.authUrl;
-const auth=authUrl?createAuthClient(new URL(authUrl,location.origin).href):null;
+const auth=authUrl?(direct?createDirectAuthClient({baseURL:location.origin,basePath:'/api/auth'}):createAuthClient(new URL(authUrl,location.origin).href)):null;
 let user=null;let verified=false;let roomLibrary=null;let roomRequest=null;
 let operationChain=Promise.resolve();let retryTimer;let retryDelay=5000;let syncStatus='synced';
 let epoch=0;let deletingAll=false;let signOutRequest=null;let signOutFailed=false;const retired=new Set();
@@ -21,7 +23,9 @@ function pending(){try{const rows=JSON.parse(localStorage.getItem(pendingKey()) 
 function setPending(rows){try{if(pendingKey())localStorage.setItem(pendingKey(),JSON.stringify(rows.slice(0,100)));return true;}catch{setSync('pending');return false;}}
 function acknowledge(item){const queued=pending().find(x=>x.id===item.id);if(JSON.stringify(queued)===JSON.stringify(item))setPending(pending().filter(x=>x.id!==item.id));}
 function write(rows){try{localStorage.setItem(historyKey(),JSON.stringify(rows.slice(0,100)));return true;}catch{error('History could not be saved on this device.');return false;}}
+const authHeaders=token=>token?{Authorization:'Bearer '+token}:{};
 async function accessToken(){
+ if(direct)return null;
  // Neon injects the signed JWT into session.token. In 0.8.2, token() can
  // return the cached session object instead of {token}; don't use it here.
  const session=await auth.getSession();
@@ -39,7 +43,7 @@ async function api(method,item,c=context()){
  if(!current(c))throw Error('Account changed.');
  const token=await accessToken();
  if(!current(c))throw Error('Account changed.');
- const r=await fetch('/api/history',{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:item?JSON.stringify(item):undefined});
+ const r=await fetch('/api/history',{method,credentials:'same-origin',headers:{...authHeaders(token),'Content-Type':'application/json'},body:item?JSON.stringify(item):undefined});
  const body=await r.json();if(!current(c))throw Error('Account changed.');if(!r.ok)throw Error(body.error || 'History sync failed.');return body;
 }
 async function list(){
@@ -79,8 +83,8 @@ async function importLocal(){
 const ready=(async()=>{if(!auth)return;try{const session=await auth.getSession();if(session.error)throw session.error;user=session.data?.user || null;emit();}catch{error('Sign-in could not be restored. Please try signing in again.');emit();}})();
 function syncLater(){if(user)setTimeout(importLocal,1200);}
 window.BAJAAAccount={ready,configured:!!auth,get user(){return user;},get verified(){return verified;},get syncStatus(){return syncStatus;},list,
- async openRoom(){await ready;if(!user || !auth)return false;const c=context();if(roomLibrary){verified=true;return true;}if(roomRequest)return roomRequest;roomRequest=(async()=>{try{const token=await accessToken();if(!current(c))return false;const r=await fetch('/api/library',{headers:{Authorization:'Bearer '+token}});if(!current(c))return false;if(!r.ok){if(r.status===401){lockAccount();}throw Error('Could not open your room. Please try signing in again.');}const library=await r.json();if(!current(c))return false;roomLibrary=library;verified=true;syncLater();return true;}catch(e){error(e.message);return false;}finally{roomRequest=null;}})();return roomRequest;},
- async authorize(){await ready;if(!user || !auth)return false;const c=context();try{const token=await accessToken();if(!current(c))return false;const r=await fetch('/api/session',{headers:{Authorization:'Bearer '+token}});if(!current(c))return false;verified=r.ok;if(r.status===401){lockAccount();error('Your sign-in has expired. Please continue with Google again.');}else if(!r.ok)error('Sign-in verification is temporarily unavailable. Please try again.');return verified;}catch(e){error(e.message || 'Sign-in verification failed. Please try again.');return false;}},
+ async openRoom(){await ready;if(!user || !auth)return false;const c=context();if(roomLibrary){verified=true;return true;}if(roomRequest)return roomRequest;roomRequest=(async()=>{try{const token=await accessToken();if(!current(c))return false;const r=await fetch('/api/library',{credentials:'same-origin',headers:authHeaders(token)});if(!current(c))return false;if(!r.ok){if(r.status===401){lockAccount();}throw Error('Could not open your room. Please try signing in again.');}const library=await r.json();if(!current(c))return false;roomLibrary=library;verified=true;syncLater();return true;}catch(e){error(e.message);return false;}finally{roomRequest=null;}})();return roomRequest;},
+ async authorize(){await ready;if(!user || !auth)return false;const c=context();try{const token=await accessToken();if(!current(c))return false;const r=await fetch('/api/session',{credentials:'same-origin',headers:authHeaders(token)});if(!current(c))return false;verified=r.ok;if(r.status===401){lockAccount();error('Your sign-in has expired. Please continue with Google again.');}else if(!r.ok)error('Sign-in verification is temporarily unavailable. Please try again.');return verified;}catch(e){error(e.message || 'Sign-in verification failed. Please try again.');return false;}},
  async library(){if(!await this.openRoom())return null;return roomLibrary;},
  async signIn(returnTo='/'){if(signOutRequest)await signOutRequest;if(signOutFailed && !await this.signOut())return false;sessionStorage.setItem('bajaa.returnTo',returnTo);if(!auth){error('Google sign-in is being configured.');return false;}try{const r=await auth.signIn.social({provider:'google',callbackURL:location.origin+'/'});if(r.error)throw r.error;return true;}catch(e){error(e.message || 'Google sign-in failed.');return false;}},
  async signOut(){
@@ -107,7 +111,7 @@ window.BAJAAAccount={ready,configured:!!auth,get user(){return user;},get verifi
   try{return await enqueue(async()=>{
    if(!current(c))throw Error('Account changed.');
    const token=await accessToken();if(!current(c))throw Error('Account changed.');
-   const r=await fetch('/api/account',{method:'DELETE',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({confirm:true})});
+   const r=await fetch('/api/account',{method:'DELETE',credentials:'same-origin',headers:{...authHeaders(token),'Content-Type':'application/json'},body:JSON.stringify({confirm:true})});
    const data=await r.json();if(!current(c))throw Error('Account changed.');if(!r.ok)throw Error(data.error || 'History deletion failed.');
    for(const item of read())retired.add(item.id);
    localStorage.removeItem(historyKey());localStorage.removeItem(pendingKey());localStorage.removeItem('naux.sets');setSync('synced');

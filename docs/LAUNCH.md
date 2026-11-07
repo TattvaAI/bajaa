@@ -1,22 +1,14 @@
-# BAJAA launch configuration
+# Current BAJAA Google sign-in configuration
 
-Google OAuth app: Web application, name BAJAA.
+BAJAA now hosts Better Auth on Vercel; Neon remains its Postgres database. This matches Interncell's authentication architecture. The old managed Neon proxy remains available only for an explicit rollback via BAJAA_AUTH_MODE=managed.
 
-Authorized JavaScript origins (no trailing slash):
+Google Authorized JavaScript origin: `https://bajaa.vercel.app`
+Google Authorized redirect URI: `https://bajaa.vercel.app/api/auth/callback/google`
 
-- https://bajaa.vercel.app
-- http://localhost:8000
-- http://localhost:8001
-- https://ep-lingering-truth-a1m58hd7.neonauth.ap-southeast-1.aws.neon.tech
+The user confirmed the new redirect registration. Keep the older Neon redirect temporarily for rollback. Set Google Auth Platform Branding to BAJAA and complete consent publication as applicable. Google controls the exact account-chooser text; the redirect now carries BAJAA's host rather than neon.tech.
 
-Authorized redirect URI:
+Vercel production requires DATABASE_URL, BAJAA_AUTH_MODE=direct, BETTER_AUTH_URL=https://bajaa.vercel.app, BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET. Google credentials and cookie secret are server-only. Rotate the previously exposed Google secret and update the Vercel secret environment variable. Do not reuse Interncell's credentials.
 
-https://ep-lingering-truth-a1m58hd7.neonauth.ap-southeast-1.aws.neon.tech/neondb/auth/callback/google
+`node scripts/migrate-auth.cjs` applies versioned additive SQL. Existing user IDs and Google subject bindings are copied into BAJAA-owned auth tables; history ownership stays unchanged. Managed sessions are not imported, so users sign in again once. Managed Neon tables remain intact. Test migration on a branch before applying to production. Rollback: set BAJAA_AUTH_MODE=managed and redeploy; the older provider URL/secret variables and callback must remain available.
 
-Neon project dark-art-65490836, production branch br-delicate-sun-a1argkfs, organization org-spring-art-95591008. Google provider has custom credentials. Store the client secret in Neon, never public config. The user supplied a secret in chat; rotate it in Google and update Neon after setup.
-
-For Google app in Testing, add your own account to Test users. For public use, finish the consent screen, privacy/terms URLs and publishing requirements. Neon trusted domain includes https://bajaa.vercel.app; localhost is allowed by Neon defaults. Add custom domains before changing callbackURL.
-
-Creator: SHIVANSH. Public support: contact@interncell.com. Instagram/LinkedIn: whyshivanshbansal. Verified GitHub account: TattvaAI. App auth now uses /api/auth on its own origin, with NEON_AUTH_COOKIE_SECRET on the server. Google redirect URI remains the Neon callback above. Real Neon sessions, production reload and two-browser cloud sync passed; the user confirmed Google sign-in works. Google consent-screen publishing remains an operator configuration step. Any licensed audio-only playback provider is a separate integration choice.
-
-Google chooser currently displays neon.tech because the callback is hosted there. The custom client ID was verified in the real redirect. Set Google Auth Platform → Branding app name to BAJAA and publish/verify the consent screen as applicable; Google may still show a callback domain. A custom auth domain or carefully planned same-origin auth migration is separate work. No new OAuth credentials are needed for the current functioning flow.
+Creator SHIVANSH · contact@interncell.com. See PROJECT_REVIEW.md for music/device and operator limits.

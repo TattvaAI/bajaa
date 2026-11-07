@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "node scripts/dev.cjs",
     "build": "node scripts/build.cjs",
-    "check": "node --check app.js && node --check design.js && node --check sets.js && node --check tune.js && node --check account.js && node --check api/auth.mjs && node --check api/account.mjs && node --check server/history.mjs",
+    "check": "node --check app.js && node --check design.js && node --check sets.js && node --check tune.js && node --check account.js && node --check api/auth.mjs && node --check api/account.mjs && node --check server/history.mjs && node --check server/direct-auth.mjs",
     "test": "node tests/smoke.cjs",
     "test:a11y": "node tests/accessibility.cjs",
     "test:account": "node tests/account-token.cjs",
     "test:queue": "node tests/account-queue.cjs",
-    "test:proxy": "node tests/auth-proxy.cjs"
+    "test:proxy": "node tests/auth-proxy.cjs",
+    "test:direct": "node tests/direct-auth.cjs"
   },
   "engines": {
     "node": ">=22.12"
@@ -19,6 +20,7 @@
   "dependencies": {
     "@neon/auth": "^0.8.2",
     "@vercel/functions": "^3.11.0",
+    "better-auth": "^1.7.18",
     "jose": "^6.1.0",
     "pg": "^8.23.1"
   },

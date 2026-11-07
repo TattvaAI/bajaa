@@ -1,6 +1,6 @@
 # BAJAA · Just let it play
 
-Compulsory Google sign-in, four room questions, automatic DJ-style music, and listening history. Vanilla JavaScript and a static frontend on Vercel; managed Neon Auth and server-only Postgres history API.
+Compulsory Google sign-in, four room questions, automatic DJ-style music, and listening history. Vanilla JavaScript and a static frontend on Vercel; same-domain Better Auth and server-only Neon Postgres history API.
 
 ## Run
 
@@ -10,6 +10,7 @@ Node 22.12+ and Chrome are required for tests.
 npm install
 neon env pull
 node scripts/migrate.cjs
+node scripts/migrate-auth.cjs
 npm run build
 npm run dev
 ```
@@ -39,7 +40,7 @@ node scripts/migrate.cjs
 vercel deploy --prod
 ```
 
-Vercel project: bajaa. Production: https://bajaa.vercel.app. Required production environment: DATABASE_URL, NEON_AUTH_BASE_URL, NEON_AUTH_JWKS_URL, NEON_AUTH_COOKIE_SECRET. Creator defaults to SHIVANSH; support defaults to contact@interncell.com. PUBLIC_CREATOR_NAME and PUBLIC_CONTACT_EMAIL can override them. Google secret belongs only in Neon Auth provider configuration. Configure exact origins and callback from docs/LAUNCH.md.
+Vercel project: bajaa. Production: https://bajaa.vercel.app. Required production environment: DATABASE_URL, BAJAA_AUTH_MODE=direct, BETTER_AUTH_URL=https://bajaa.vercel.app, BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET. Older NEON_AUTH_* variables support managed-auth rollback. Creator defaults to SHIVANSH; support defaults to contact@interncell.com. PUBLIC_CREATOR_NAME and PUBLIC_CONTACT_EMAIL can override them. Google secret belongs only in Vercel server environment. Configure exact origins and callback from docs/LAUNCH.md.
 
 ## Limits
 

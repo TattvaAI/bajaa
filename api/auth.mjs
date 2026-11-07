@@ -6,6 +6,7 @@ const routes = new Map([
   ['token', ['GET']],
   ['sign-in/social', ['POST']],
   ['sign-out', ['POST']],
+  ['callback/google', ['GET']],
 ]);
 
 export default async function handler(req, res) {
@@ -23,9 +24,20 @@ export default async function handler(req, res) {
     res.setHeader('Allow', routes.get(path).join(', '));
     return res.end('{}');
   }
-  if (req.method === 'POST' && req.headers.origin !== url.origin) {
+  if (req.method === 'POST' && req.headers.origin !== (process.env.BAJAA_AUTH_MODE==='direct'?(process.env.BETTER_AUTH_URL || 'https://bajaa.vercel.app'):url.origin)) {
     res.statusCode = 403;
     return res.end('{}');
+  }
+  if(process.env.BAJAA_AUTH_MODE==='direct'){
+    if(path==='token'){res.statusCode=404;return res.end('{}');}
+    const {directAuth}=await import('../server/direct-auth.mjs');
+    const origin=process.env.BETTER_AUTH_URL || 'https://bajaa.vercel.app';
+    const target=new URL('/api/auth/'+path+url.search,origin);
+    const headers=new Headers();for(const [key,value]of Object.entries(req.headers))if(value!==undefined)headers.set(key,Array.isArray(value)?value.join(', '):value);
+    headers.set('host',target.host);
+    const body=req.body===undefined?undefined:typeof req.body==='string'?req.body:JSON.stringify(req.body);
+    try{const response=await directAuth().handler(new Request(target,{method:req.method,headers,...(body?{body}:{})}));res.statusCode=response.status;for(const [key,value]of response.headers)if(key!=='set-cookie')res.setHeader(key,value);const cookies=response.headers.getSetCookie();if(cookies.length)res.setHeader('Set-Cookie',cookies);return res.end(Buffer.from(await response.arrayBuffer()));}
+    catch{res.statusCode=503;return res.end(JSON.stringify({message:'Sign-in is temporarily unavailable.'}));}
   }
   if (!process.env.NEON_AUTH_BASE_URL || !process.env.NEON_AUTH_COOKIE_SECRET) {
     res.statusCode = 503;

@@ -4,6 +4,7 @@ import { attachDatabasePool } from '@vercel/functions';
 let pool;let jwks;
 export function database(){if(!pool){if(!process.env.DATABASE_URL)throw Error('Database configuration missing');pool=new pg.Pool({connectionString:process.env.DATABASE_URL.replace(/sslmode=require/,'sslmode=verify-full'),max:5,idleTimeoutMillis:10000,connectionTimeoutMillis:10000});attachDatabasePool(pool);}return pool;}
 export async function authenticate(req){
+ if(process.env.BAJAA_AUTH_MODE==='direct'){if(!['GET','HEAD'].includes(req.method) && req.headers.origin!==(process.env.BETTER_AUTH_URL || 'https://bajaa.vercel.app'))return null;try{const {directIdentity}=await import('./direct-auth.mjs');return await directIdentity(req);}catch{return null;}}
  const header=req.headers.authorization || '';if(!header.startsWith('Bearer '))return null;
  if(!process.env.NEON_AUTH_JWKS_URL || !process.env.NEON_AUTH_BASE_URL)return null;
  jwks ||= createRemoteJWKSet(new URL(process.env.NEON_AUTH_JWKS_URL));

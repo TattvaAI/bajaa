@@ -39,7 +39,7 @@ async function fixture() {
       requests.push(request);
     }),
   };
-  vm.runInNewContext(fs.readFileSync(__dirname+'/../account.js','utf8').replace("import { createAuthClient } from '@neon/auth';",''),sandbox);
+  vm.runInNewContext(fs.readFileSync(__dirname+'/../account.js','utf8').replace("import { createAuthClient } from '@neon/auth';",'').replace("import { createAuthClient as createDirectAuthClient } from 'better-auth/client';",''),sandbox);
   await window.BAJAAAccount.ready;
   return {account:window.BAJAAAccount,storage,cloud,requests,timers,window,channel,holdSession:()=>{holdSession=true;},finishSession:()=>authSessionDone(),finishSignOut:()=>signOutDone()};
 }
